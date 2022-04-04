@@ -7,13 +7,13 @@ build:
 	go build -o ./output/erc20  ./cmd/erc20/main.go
 
 native_init:
-	./output/native_init -n 100 -keys ./output/keys.data
+	./output/native_init -n 1000 -keys ./output/keys.data
 
 native_test:
-	./output/native -keys ./output/keys.data -c 10 -d 300
+	./output/native -keys ./output/keys.data -c 100 -d 300
 
 erc20_init:
-	./output/erc20_init -n 100 -keys ./output/erc20_keys.data -contract ./output/contract
+	./output/erc20_init -n 1000 -keys ./output/erc20_keys.data -contract ./output/contract
 
 erc20_test:
-	./output/erc20 -keys ./output/erc20_keys.data -contract ./output/contract -c 10 -d 300
+	./output/erc20 -keys ./output/erc20_keys.data -contract ./output/contract -c 100 -d 300
