@@ -3,37 +3,64 @@ package common
 import (
 	"context"
 	"fmt"
+	"github.com/Overealityio/ovr-benchmark-go/account"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/liyue201/erc20-go/erc20"
-	"github.com/Overealityio/ovr-benchmark-go/account"
 	"github.com/shopspring/decimal"
 	"github.com/ybbus/jsonrpc/v3"
+	"math"
 	"math/big"
 	"sync"
 	"time"
 )
 
+func InitParam(web3 *ethclient.Client) {
+	height, err := web3.BlockNumber(context.Background())
+	if err != nil {
+		fmt.Printf("failed to get BlockNumber: %v\n", err)
+		panic(err)
+	}
+	fmt.Printf("height: %d\n", height)
+
+	gasPrice, err := web3.SuggestGasPrice(context.Background())
+	if err != nil {
+		fmt.Printf("failed to gasPrice: %v\n", err)
+		panic(err)
+	}
+	GasPrice = gasPrice
+	fmt.Printf("gasPrice: %s\n", gasPrice.String())
+
+	chainID, err := web3.ChainID(context.Background())
+	if err != nil {
+		fmt.Printf("failed to get ChainID: %v\n", err)
+		panic(err)
+	}
+	ChainId = chainID
+
+	fmt.Printf("chainID: %s\n", chainID.String())
+}
+
 func MakeTx(from *account.Account, to *common.Address, nonce uint64, value *big.Int, data []byte) *types.Transaction {
-	chainID := big.NewInt(ChainId)
 	tx, _ := from.SignTx(types.NewTx(&types.LegacyTx{
 		Nonce:    nonce,
 		To:       to,
 		Value:    value,
 		Gas:      2100000,
-		GasPrice: big.NewInt(10),
+		GasPrice: GasPrice,
 		Data:     data,
-	}), chainID)
+	}), ChainId)
 	return tx
 }
 
 func GetBlockTransactionCountByNumber(height uint64) (uint64, error) {
 	rpcClient := jsonrpc.NewClient(W3RpcUrl)
 	var count hexutil.Uint64
-	err := rpcClient.CallFor(context.Background(), &count, "eth_getBlockTransactionCountByNumber", height)
+	strHeight := fmt.Sprintf("0x%x", height)
+	err := rpcClient.CallFor(context.Background(), &count, "eth_getBlockTransactionCountByNumber", strHeight)
 
 	return uint64(count), err
 }
@@ -68,10 +95,10 @@ func SendErc20Token(web3 *ethclient.Client, from *account.Account, contract comm
 	}
 	opts := bind.TransactOpts{
 		From:     from.Address(),
-		Signer:   from.KeySigner(big.NewInt(ChainId)),
+		Signer:   from.KeySigner(ChainId),
 		Nonce:    big.NewInt(int64(nonce)),
 		GasLimit: 2100000,
-		GasPrice: big.NewInt(10),
+		GasPrice: GasPrice,
 	}
 	_, err = token.Transfer(&opts, SinkAddress, amount)
 	return err
@@ -84,7 +111,7 @@ func batchSendNativeToken(web3 *ethclient.Client, from *account.Account, account
 		to := account.Address()
 		nonce, err := web3.NonceAt(context.Background(), from.Address(), nil)
 		if err != nil {
-			fmt.Printf("NonceAt: %s", err)
+			fmt.Printf("failed to get nonce: %s\n", err)
 			continue
 		}
 		tx := MakeTx(from, &to, nonce, value, nil)
@@ -92,8 +119,8 @@ func batchSendNativeToken(web3 *ethclient.Client, from *account.Account, account
 		if err != nil {
 			//try again
 			//fmt.Printf("faild to send: %s\n", err)
-			tx := MakeTx(from, &to, nonce+1, value, nil)
-			web3.SendTransaction(context.Background(), tx)
+			//tx := MakeTx(from, &to, nonce+1, value, nil)
+			//web3.SendTransaction(context.Background(), tx)
 		}
 		if (i+1)%10 == 0 {
 			fmt.Printf("batchSendNativeToken: %d\n", i+1)
@@ -140,9 +167,13 @@ func BatchSendNativeToken(web3 *ethclient.Client, from *account.Account, account
 
 func BatchSendNativeToken2(web3 *ethclient.Client, from *account.Account, accounts []*account.Account, value *big.Int) error {
 	if len(accounts) > 50 {
-		seedCount := 10
+		seedCount := int(math.Sqrt(float64(len(accounts))))
+		if seedCount > 100 {
+			seedCount = 100
+		}
+
 		seeds := account.GenAccounts(seedCount)
-		c := int64(len(accounts)/seedCount) * 10
+		c := int64(len(accounts)/seedCount) * 3
 
 		seedValue := big.NewInt(1)
 		seedValue.Mul(seedValue, value)
@@ -179,7 +210,7 @@ func batchSendErc20Token(web3 *ethclient.Client, contract common.Address, from *
 		return err
 	}
 	for i, account := range accounts {
-		time.Sleep(time.Second*3)
+		time.Sleep(time.Second * 3)
 		nonce, err := web3.NonceAt(context.Background(), from.Address(), nil)
 		if err != nil {
 			continue
@@ -188,20 +219,20 @@ func batchSendErc20Token(web3 *ethclient.Client, contract common.Address, from *
 
 		opts := bind.TransactOpts{
 			From:     from.Address(),
-			Signer:   from.KeySigner(big.NewInt(ChainId)),
+			Signer:   from.KeySigner(ChainId),
 			Nonce:    big.NewInt(int64(nonce)),
 			GasLimit: 2100000,
-			GasPrice: big.NewInt(10),
+			GasPrice: GasPrice,
 		}
 		_, err = token.Transfer(&opts, to, amount)
 		if err != nil {
 			//try again
 			opts := bind.TransactOpts{
 				From:     from.Address(),
-				Signer:   from.KeySigner(big.NewInt(ChainId)),
+				Signer:   from.KeySigner(ChainId),
 				Nonce:    big.NewInt(int64(nonce + 1)),
 				GasLimit: 2100000,
-				GasPrice: big.NewInt(10),
+				GasPrice: GasPrice,
 			}
 			token.Transfer(&opts, to, amount)
 		}
@@ -260,9 +291,12 @@ func BatchSendErc20Token(web3 *ethclient.Client, contract common.Address, from *
 
 func BatchSendErc20Token2(web3 *ethclient.Client, contract common.Address, from *account.Account, accounts []*account.Account, value *big.Int) error {
 	if len(accounts) > 50 {
-		seedCount := 10
+		seedCount := int(math.Sqrt(float64(len(accounts))))
+		if seedCount > 100 {
+			seedCount = 100
+		}
 		seeds := account.GenAccounts(seedCount)
-		c := int64(len(accounts)/seedCount) * 10
+		c := int64(len(accounts)/seedCount) * 3
 
 		seedValue := big.NewInt(1)
 		seedValue.Mul(seedValue, value)

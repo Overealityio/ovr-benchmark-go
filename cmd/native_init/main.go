@@ -4,9 +4,9 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/Overealityio/ovr-benchmark-go/account"
 	common2 "github.com/Overealityio/ovr-benchmark-go/common"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/shopspring/decimal"
 	"io/ioutil"
 	"math/big"
@@ -71,12 +71,8 @@ func main() {
 		fmt.Printf("failed to dial: %v\n", err)
 		return
 	}
-	height, err := web3.BlockNumber(context.Background())
-	if err != nil {
-		fmt.Printf("failed to get BlockNumber: %v\n", err)
-		return
-	}
-	fmt.Printf("height: %d\n", height)
+
+	common2.InitParam(web3)
 
 	balance, err := web3.BalanceAt(context.Background(), rootAccount.Address(), nil)
 	if err != nil {

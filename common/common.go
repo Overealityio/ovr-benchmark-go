@@ -4,16 +4,17 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"io/ioutil"
+	"math/big"
 	"os"
 )
 
-const ChainId = 9527
-
 var (
 	W3RpcUrl    = "http://localhost:8545"
-	Phrase      = "state olympic inhale canvas verb market charge ignore sword asthma glass grant"
+	Phrase      = "cigar cat metal speak shoulder tower bread seed unknown ugly carbon sibling"
 	PrivateKey  = ""
 	SinkAddress = common.HexToAddress("76905f6CE511A0f3410A75e68d689832EDaDf836")
+	GasPrice    = big.NewInt(10)
+	ChainId     = big.NewInt(9527)
 )
 
 func init() {

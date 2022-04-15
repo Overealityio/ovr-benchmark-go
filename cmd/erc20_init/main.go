@@ -91,12 +91,8 @@ func main() {
 		fmt.Printf("failed to dial: %v\n", err)
 		return
 	}
-	height, err := web3.BlockNumber(context.Background())
-	if err != nil {
-		fmt.Printf("failed to get BlockNumber: %v\n", err)
-		return
-	}
-	fmt.Printf("height: %d\n", height)
+
+	common2.InitParam(web3)
 
 	balance, err := web3.BalanceAt(context.Background(), rootAccount.Address(), nil)
 	if err != nil {

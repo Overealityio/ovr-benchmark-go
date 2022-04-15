@@ -72,7 +72,7 @@ func stats(ctx context.Context) {
 			preHeight = height
 			count, err := common2.GetBlockTransactionCountByNumber(height)
 			if err != nil {
-				fmt.Printf("failed to get BlockByNumber %v: %v\n", height, err)
+				fmt.Printf("failed to GetBlockTransactionCountByNumber %v: %v\n", height, err)
 				continue
 			}
 			if startTime == 0 && count > 0 {
@@ -152,12 +152,9 @@ func main() {
 		fmt.Printf("failed to dial: %v\n", err)
 		return
 	}
-	height, err := web3.BlockNumber(context.Background())
-	if err != nil {
-		fmt.Printf("failed to get BlockNumber: %v\n", err)
-		return
-	}
-	fmt.Printf("height: %d\n", height)
+
+	common2.InitParam(web3)
+
 	accounts := loadAccount(*keysFile)
 	fmt.Printf("account count: %v\n", len(accounts))
 

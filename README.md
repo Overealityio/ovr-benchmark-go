@@ -6,6 +6,9 @@ LocalNet(Default)
 ```
 export W3RPC_URL="http://localhost:8545"
 export ROOT_PHRASE="cigar cat metal speak shoulder tower bread seed unknown ugly carbon sibling"
+
+# Or use ROOT_PRIVATE_KEY instead of ROOT_PHRASE
+# export ROOT_PRIVATE_KEY=You private key
 ```
 
 DevNet
